@@ -14,12 +14,12 @@ const path = require('path')
 const bodyParser = require('body-parser');
 
 const corsOptions = {
-    origin: 'http://192.168.1.147:8442',
+    origin: 'http://127.0.0.1:8442',
     optionsSuccessStatus: 200 // For legacy browser support
 }
 
 app.use(cors(corsOptions))
-app.use(cors({ origin: "http://192.168.1.147:8442", credentials: true }));
+app.use(cors({ origin: "http://127.0.0.1:8442", credentials: true }));
 
 app.use(express.urlencoded({extended: true}))
 // app.use(express.static(path.join('/var/www/frontend/iron-pool/dist')))
@@ -27,7 +27,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const port = Number(process.env.PORT) || 8442;
-const host = '192.168.1.147';
+const host = '127.0.0.1';
 
 const mainStateJSON = '/home/iron/Рабочий стол/ironfish_0.1.40/ironfish/ironfish/src/mining/webApi/mainState.json'
 const transactionJSON = '/home/iron/Рабочий стол/ironfish_0.1.40/ironfish/ironfish/src/mining/webApi/transaction.json'
@@ -136,7 +136,6 @@ export default class webApi {
             try {
                 let allRate = []
 
-                // We get the hashrate of the pool in 15 minutes
                 let gethashRateFifteenMinutes = await this.pool.gethashRateFifteenMinutes()
                 
                 allRate.push(gethashRateFifteenMinutes)
@@ -162,7 +161,6 @@ export default class webApi {
             try {
                 const publicAddress = req.body.publickey
 
-                // Getting user data
                 let amountOfUsersMoney = await this.pool.getAmountUser(publicAddress)   
                 let userRateEightHours = await this.pool.getUserHashRateGraphics(publicAddress) 
                 let findUser = await this.pool.findUserByPublicAddress(publicAddress)
@@ -172,8 +170,7 @@ export default class webApi {
                 this.hash = await this.StratumServer.valuesClients(FIND_PUBLICK_ADDRESS, publicAddress)
 
                 averageUserEarnings = 86400 * 20 * Number(FileUtils.formatHashRateWithoutSuffix(this.hash)) * 1000000 / 22883417649311;
-                
-                // Processing a number in iron is not implemented very correctly
+                    
                 String(averageUserEarnings).split('').forEach((val: any, index: number, arr: any) => {
                     if (val === '.') {
                         const segment1 = arr.slice(0, index).join("")
@@ -210,7 +207,7 @@ export default class webApi {
                             ironWithAComma: oreToIron(amountOfUsersMoney[0]?.amount),
                             unprocessedAmount: amountOfUsersMoney[0]?.amount
                         },
-                        online: this.userInfo.online < 1 ? this.userInfo.lastMining: 'online',
+                        online: this.userInfo?.online < 1 ? this.userInfo?.lastMining: 'online',
                         hashRate: FileUtils.formatHashRate(this.hash ? this.hash : 0),
                         userRateEightHours: {
                             rawUserRateEightHours: userRateEightHours,
@@ -221,9 +218,8 @@ export default class webApi {
 
                     console.log({
                         publicAddress,
-                        online: this.userInfo.online < 1 ? this.userInfo?.lastMining: 'online'
+                        online: this.userInfo?.online < 1 ? this.userInfo?.lastMining: 'online'
                     });
-                    
                     return res.send(json)
                 }
             } catch (e) {

@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import { AbstractLevelDOWN } from 'abstract-leveldown'
 import levelErrors from 'level-errors'
-import LevelDOWN from 'leveldown'
 import levelup, { LevelUp } from 'levelup'
 import { Assert } from '../../assert'
 import { Mutex } from '../../mutex'
@@ -11,7 +10,6 @@ import { IJsonSerializable } from '../../serde'
 import {
   BatchOperation,
   Database,
-  DATABASE_ALL_KEY_RANGE,
   DatabaseSchema,
   IDatabaseStore,
   IDatabaseStoreOptions,
@@ -25,7 +23,6 @@ import {
   DatabaseIsCorruptError,
   DatabaseIsLockedError,
   DatabaseIsOpenError,
-  DatabaseVersionError,
 } from '../database/errors'
 import { LevelupBatch } from './batch'
 import { LevelupStore } from './store'
@@ -66,9 +63,6 @@ export class LevelupDatabase extends Database {
     return this._levelup?.isOpen() || false
   }
 
-  /**
-   * @param options https://github.com/Level/leveldown/blob/51979d11f576c480bc5729a6adea6ac9fed57216/binding.cc#L980k,
-   */
   async open(): Promise<void> {
     this._levelup = await new Promise<LevelUp>((resolve, reject) => {
       const opened = levelup(this.db, (error?: unknown) => {
@@ -107,23 +101,23 @@ export class LevelupDatabase extends Database {
   async upgrade(version: number): Promise<void> {
     Assert.isTrue(this.isOpen, 'Database needs to be open')
 
-    const current = await this.getVersion()
+    const current = await this.metaStore.get('version')
+
+    if (current === undefined) {
+      await this.metaStore.put('version', version)
+      return
+    }
+
+    if (typeof current !== 'number') {
+      throw new Error(`Corrupted database version ${typeof current}: ${String(current)}`)
+    }
 
     if (current !== version) {
-      throw new DatabaseVersionError(current, version)
+      throw new Error(
+        `You are running a newer version of ironfish on an older database.\n` +
+          `Run "ironfish reset" to reset your database.\n`,
+      )
     }
-  }
-
-  compact(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      if (this.levelup instanceof LevelDOWN) {
-        this.levelup.compactRange(
-          DATABASE_ALL_KEY_RANGE.gte,
-          DATABASE_ALL_KEY_RANGE.lte,
-          (err) => (err ? reject(err) : resolve()),
-        )
-      }
-    })
   }
 
   transaction<TResult>(
@@ -176,25 +170,6 @@ export class LevelupDatabase extends Database {
     }
 
     return batch.commit()
-  }
-
-  async getVersion(): Promise<number> {
-    let current = await this.metaStore.get('version')
-
-    if (current === undefined) {
-      current = 0
-      await this.metaStore.put('version', current)
-    }
-
-    if (typeof current !== 'number') {
-      throw new Error(`Corrupted database version ${typeof current}: ${String(current)}`)
-    }
-
-    return current
-  }
-
-  async putVersion(version: number, transaction?: IDatabaseTransaction): Promise<void> {
-    await this.metaStore.put('version', version, transaction)
   }
 
   protected _createStore<Schema extends DatabaseSchema>(

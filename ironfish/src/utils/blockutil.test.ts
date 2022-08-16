@@ -1,7 +1,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import { createNodeTest } from '../testUtilities/nodeTest'
+import { Blockchain } from '../blockchain'
+import { Strategy } from '../strategy'
+import { makeDbPath } from '../testUtilities/helpers/storage'
+import { WorkerPool } from '../workerPool'
 import { getBlockRange } from './blockchain'
 
 // Strategy for testing:
@@ -12,9 +15,19 @@ import { getBlockRange } from './blockchain'
 // P1 and P2 are positive numbers in the range of blocks
 // H is the height of the chain
 // X1 and X2 exceed the height of the chain
-describe('getBlockRange', () => {
-  const nodeTest = createNodeTest()
 
+// Blockchain is needed by getBlockRange()
+// Set it up before running tests
+const workerPool = new WorkerPool()
+const strategy = new Strategy(workerPool)
+const chain = new Blockchain({ location: makeDbPath(), strategy, workerPool })
+
+beforeAll(async () => {
+  await chain.open()
+  chain.latest.sequence = 10000
+})
+
+describe('getBlockRange', () => {
   it.each([
     // P1, P2 cases
     [{ start: 9000, stop: 900 }, 9000, 9000],
@@ -66,25 +79,19 @@ describe('getBlockRange', () => {
     [{ start: 3.14, stop: 6.28 }, 3, 6],
     [{ start: 6.28, stop: 3.14 }, 6, 6],
   ])('%o returns %d %d', (param, expectedStart, expectedStop) => {
-    nodeTest.chain.latest.sequence = 10000
-
-    const { start, stop } = getBlockRange(nodeTest.chain, param)
+    const { start, stop } = getBlockRange(chain, param)
     expect(start).toEqual(expectedStart)
     expect(stop).toEqual(expectedStop)
   })
 
   it('{ start: null, stop: 6000 } returns 1 6000', () => {
-    nodeTest.chain.latest.sequence = 10000
-
-    const { start, stop } = getBlockRange(nodeTest.chain, { start: null, stop: 6000 })
+    const { start, stop } = getBlockRange(chain, { start: null, stop: 6000 })
     expect(start).toEqual(1)
     expect(stop).toEqual(6000)
   })
 
   it('{ start: 6000, stop: null } returns 6000 10000', () => {
-    nodeTest.chain.latest.sequence = 10000
-
-    const { start, stop } = getBlockRange(nodeTest.chain, { start: 6000, stop: null })
+    const { start, stop } = getBlockRange(chain, { start: 6000, stop: null })
     expect(start).toEqual(6000)
     expect(stop).toEqual(10000)
   })

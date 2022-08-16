@@ -37,7 +37,7 @@ describe('Verifier', () => {
 
     it('extracts a valid transaction', async () => {
       const { transaction: tx } = await useTxSpendsFixture(nodeTest.node)
-      const serialized = tx.serialize()
+      const serialized = nodeTest.strategy.transactionSerde.serialize(tx)
 
       const transaction = nodeTest.chain.verifier.verifyNewTransaction(serialized)
 
@@ -63,7 +63,7 @@ describe('Verifier', () => {
     it('rejects a block with an invalid transaction', async () => {
       const block = await useMinerBlockFixture(nodeTest.chain)
 
-      jest.spyOn(nodeTest.verifier['workerPool'], 'verifyTransactions').mockResolvedValue({
+      jest.spyOn(nodeTest.verifier, 'verifyTransactionContextual').mockResolvedValue({
         valid: false,
         reason: VerificationResultReason.VERIFY_TRANSACTION,
       })

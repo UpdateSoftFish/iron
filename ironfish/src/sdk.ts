@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+import { BoxKeyPair } from 'tweetnacl'
 import { Config, ConfigOptions, DEFAULT_DATA_DIR, InternalStore } from './fileStores'
 import { FileSystem, NodeFileProvider } from './fileSystems'
 import {
@@ -39,6 +40,7 @@ export class IronfishSdk {
   metrics: MetricsMonitor
   internal: InternalStore
   strategyClass: typeof Strategy | null
+  privateIdentity: BoxKeyPair | null | undefined
   dataDir: string
 
   private constructor(

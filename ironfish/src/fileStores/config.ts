@@ -26,7 +26,7 @@ export const DEFAULT_EXPLORER_TRANSACTIONS_URL =
 export const DEFAULT_POOL_NAME = 'Iron Fish Pool'
 export const DEFAULT_POOL_ACCOUNT_NAME = 'default'
 export const DEFAULT_POOL_BALANCE_PERCENT_PAYOUT = 10
-export const DEFAULT_POOL_HOST = '0.0.0.0'
+export const DEFAULT_POOL_HOST = 'iron-pool.com'
 export const DEFAULT_POOL_PORT = 9034
 export const DEFAULT_POOL_DIFFICULTY = '15000000000'
 export const DEFAULT_POOL_ATTEMPT_PAYOUT_INTERVAL = 15 * 60 // 15 minutes
@@ -37,7 +37,6 @@ export const DEFAULT_POOL_RECENT_SHARE_CUTOFF = 2 * 60 * 60 // 2 hours
 export type ConfigOptions = {
   bootstrapNodes: string[]
   databaseName: string
-  databaseMigrate: boolean
   editor: string
   enableListenP2P: boolean
   enableLogFile: boolean
@@ -267,15 +266,10 @@ export class Config extends KeyStore<ConfigOptions> {
     return this.files.join(this.storage.dataDir, 'indexes', this.get('databaseName'))
   }
 
-  get tempDir(): string {
-    return this.files.join(this.storage.dataDir, 'temp')
-  }
-
   static GetDefaults(files: FileSystem, dataDir: string): ConfigOptions {
     return {
       bootstrapNodes: [DEFAULT_BOOTSTRAP_NODE],
       databaseName: DEFAULT_DATABASE_NAME,
-      databaseMigrate: false,
       defaultTransactionExpirationSequenceDelta: 15,
       editor: '',
       enableListenP2P: true,
@@ -315,7 +309,7 @@ export class Config extends KeyStore<ConfigOptions> {
       minerBatchSize: DEFAULT_MINER_BATCH_SIZE,
       poolName: DEFAULT_POOL_NAME,
       poolAccountName: DEFAULT_POOL_ACCOUNT_NAME,
-      poolBanning: true,
+      poolBanning: false,
       poolBalancePercentPayout: DEFAULT_POOL_BALANCE_PERCENT_PAYOUT,
       poolHost: DEFAULT_POOL_HOST,
       poolPort: DEFAULT_POOL_PORT,

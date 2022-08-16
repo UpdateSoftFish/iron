@@ -5,7 +5,6 @@ import * as yup from 'yup'
 import { Assert } from '../../../assert'
 import { ChainProcessor } from '../../../chainProcessor'
 import { Block, BlockHeader } from '../../../primitives'
-import { BlockSerde } from '../../../primitives/block'
 import { BlockHashSerdeInstance } from '../../../serde'
 import { GraffitiUtils, PromiseUtils } from '../../../utils'
 import { ApiNamespace, router } from '../router'
@@ -117,7 +116,9 @@ router.register<typeof FollowChainStreamRequestSchema, FollowChainStreamResponse
         return transaction.withReference(() => {
           return {
             hash: BlockHashSerdeInstance.serialize(transaction.unsignedHash()),
-            size: Buffer.from(JSON.stringify(transaction.serialize())).byteLength,
+            size: Buffer.from(
+              JSON.stringify(node.strategy.transactionSerde.serialize(transaction)),
+            ).byteLength,
             fee: Number(transaction.fee()),
             notes: [...transaction.notes()].map((note) => ({
               commitment: note.merkleHash().toString('hex'),
@@ -139,7 +140,8 @@ router.register<typeof FollowChainStreamRequestSchema, FollowChainStreamResponse
           sequence: block.header.sequence,
           previous: block.header.previousBlockHash.toString('hex'),
           graffiti: GraffitiUtils.toHuman(block.header.graffiti),
-          size: Buffer.from(JSON.stringify(BlockSerde.serialize(block))).byteLength,
+          size: Buffer.from(JSON.stringify(node.strategy.blockSerde.serialize(block)))
+            .byteLength,
           work: block.header.work.toString(),
           main: type === 'connected',
           timestamp: block.header.timestamp.valueOf(),

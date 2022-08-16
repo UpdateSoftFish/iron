@@ -24,7 +24,7 @@ import {
 } from './database/noteToNullifiers'
 import { TransactionsValue, TransactionsValueEncoding } from './database/transactions'
 
-export const VERSION_DATABASE_ACCOUNTS = 11
+const DATABASE_VERSION = 5
 
 export const AccountDefaults: AccountsValue = {
   name: '',
@@ -120,10 +120,14 @@ export class AccountsDB {
     })
   }
 
-  async open(): Promise<void> {
+  async open(options: { upgrade?: boolean } = { upgrade: true }): Promise<void> {
     await this.files.mkdir(this.location, { recursive: true })
+
     await this.database.open()
-    await this.database.upgrade(VERSION_DATABASE_ACCOUNTS)
+
+    if (options.upgrade) {
+      await this.database.upgrade(DATABASE_VERSION)
+    }
   }
 
   async close(): Promise<void> {
