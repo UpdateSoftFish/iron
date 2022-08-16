@@ -389,7 +389,7 @@ export class StratumServer {
     const serialized = JSON.stringify(message) + '\n'
     socket.write(serialized)
   }
-      // ==================================================================================================
+    // ==================================================================================================
 
     // Total hashrate of the pool
 
