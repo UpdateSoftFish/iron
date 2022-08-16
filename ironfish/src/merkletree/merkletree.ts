@@ -82,12 +82,28 @@ export class MerkleTree<
     })
   }
 
+  async upgrade(): Promise<void> {
+    if ((await this.counter.get('Leaves')) === undefined) {
+      await this.counter.put('Leaves', 0)
+    }
+
+    if ((await this.counter.get('Nodes')) === undefined) {
+      await this.counter.put('Nodes', 1)
+    }
+  }
+
   /**
    * Get the number of leaf nodes (elements) in the tree.
    */
   async size(tx?: IDatabaseTransaction): Promise<number> {
     return await this.db.withTransaction(tx, async (tx) => {
-      return await this.getCount('Leaves', tx)
+      const value = await this.counter.get('Leaves', tx)
+
+      if (value === undefined) {
+        throw new Error(`No counter record found for tree ${this.name}`)
+      }
+
+      return value
     })
   }
 
@@ -160,20 +176,10 @@ export class MerkleTree<
    * count is not in the store.
    */
   async getCount(countType: 'Leaves' | 'Nodes', tx?: IDatabaseTransaction): Promise<LeafIndex> {
-    let count = await this.counter.get(countType, tx)
-
+    const count = await this.counter.get(countType, tx)
     if (count === undefined) {
-      if (countType === 'Leaves') {
-        count = 0
-      } else if (countType === 'Nodes') {
-        count = 1
-      } else {
-        Assert.isNever(countType)
-      }
-
-      await this.counter.put(countType, count, tx)
+      throw new Error(`No counts found in tree ${this.name} for type ${countType}`)
     }
-
     return count
   }
 

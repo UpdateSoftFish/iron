@@ -7,6 +7,7 @@ import bufio from 'bufio'
 import { Assert } from '../../assert'
 import { BlockHeader } from '../../primitives/blockheader'
 import { Target } from '../../primitives/target'
+import { Strategy } from '../../strategy'
 import { BigIntUtils } from '../../utils/bigint'
 
 export type HeaderValue = {
@@ -14,6 +15,8 @@ export type HeaderValue = {
 }
 
 export class HeaderEncoding implements IDatabaseEncoding<HeaderValue> {
+  constructor(readonly strategy: Strategy) {}
+
   serialize(value: HeaderValue): Buffer {
     const bw = bufio.write(this.getSize(value))
 
@@ -55,6 +58,7 @@ export class HeaderEncoding implements IDatabaseEncoding<HeaderValue> {
     const hash = reader.readHash()
 
     const header = new BlockHeader(
+      this.strategy,
       sequence,
       previousBlockHash,
       {

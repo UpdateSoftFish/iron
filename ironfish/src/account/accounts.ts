@@ -41,7 +41,6 @@ export class Accounts {
   readonly onAccountImported = new Event<[account: Account]>()
   readonly onAccountRemoved = new Event<[account: Account]>()
   readonly onBroadcastTransaction = new Event<[transaction: Transaction]>()
-  readonly onTransactionCreated = new Event<[transaction: Transaction]>()
 
   scan: ScanState | null = null
   updateHeadState: ScanState | null = null
@@ -169,14 +168,19 @@ export class Accounts {
     return false
   }
 
-  async open(): Promise<void> {
+  async open(
+    options: { upgrade?: boolean; load?: boolean } = { upgrade: true, load: true },
+  ): Promise<void> {
     if (this.isOpen) {
       return
     }
 
     this.isOpen = true
-    await this.db.open()
-    await this.load()
+    await this.db.open(options)
+
+    if (options.load) {
+      await this.load()
+    }
   }
 
   async load(): Promise<void> {
@@ -842,7 +846,6 @@ export class Accounts {
     await this.syncTransaction(transaction, { submittedSequence: heaviestHead.sequence })
     await memPool.acceptTransaction(transaction)
     this.broadcastTransaction(transaction)
-    this.onTransactionCreated.emit(transaction)
 
     return transaction
   }
@@ -1084,8 +1087,8 @@ export class Accounts {
     await this.scanTransactions()
   }
 
-  async getTransactions(account: Account): Promise<
-    Array<{
+  getTransactions(account: Account): {
+    transactions: {
       creator: boolean
       status: string
       hash: string
@@ -1093,9 +1096,8 @@ export class Accounts {
       fee: number
       notes: number
       spends: number
-      expiration: number
-    }>
-  > {
+    }[]
+  } {
     this.assertHasAccount(account)
 
     const transactions = []
@@ -1117,34 +1119,22 @@ export class Accounts {
       }
 
       if (transactionCreator || transactionRecipient) {
-        const { blockHash } = transactionMapValue
-
-        let status = 'pending'
-        if (blockHash) {
-          const header = await this.chain.getHeader(Buffer.from(blockHash, 'hex'))
-          Assert.isNotNull(header)
-          const main = await this.chain.isHeadChain(header)
-          if (main) {
-            status = 'completed'
-          } else {
-            status = 'forked'
-          }
-        }
-
         transactions.push({
           creator: transactionCreator,
-          status,
+          status:
+            transactionMapValue.blockHash && transactionMapValue.submittedSequence
+              ? 'completed'
+              : 'pending',
           hash: transaction.unsignedHash().toString('hex'),
           isMinersFee: transaction.isMinersFee(),
           fee: Number(transaction.fee()),
           notes: transaction.notesLength(),
           spends: transaction.spendsLength(),
-          expiration: transaction.expirationSequence(),
         })
       }
     }
 
-    return transactions
+    return { transactions }
   }
 
   getTransaction(
@@ -1218,10 +1208,6 @@ export class Accounts {
 
     if (toImport.name && this.accounts.has(toImport.name)) {
       throw new Error(`Account already exists with the name ${toImport.name}`)
-    }
-
-    if (this.listAccounts().find((a) => toImport.spendingKey === a.spendingKey)) {
-      throw new Error(`Account already exists with provided spending key`)
     }
 
     const serializedAccount: AccountsValue = {

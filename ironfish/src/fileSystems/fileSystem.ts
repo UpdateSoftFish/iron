@@ -16,7 +16,5 @@ export abstract class FileSystem {
   abstract resolve(path: string): string
   abstract join(...paths: string[]): string
   abstract dirname(path: string): string
-  abstract basename(path: string, ext?: string | undefined): string
-  abstract extname(path: string): string
   abstract exists(path: string): Promise<boolean>
 }

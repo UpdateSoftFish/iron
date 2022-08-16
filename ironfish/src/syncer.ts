@@ -9,9 +9,10 @@ import { Event } from './event'
 import { createRootLogger, Logger } from './logger'
 import { Meter, MetricsMonitor } from './metrics'
 import { Peer, PeerNetwork } from './network'
-import { BAN_SCORE, PeerState } from './network/peers/peer'
-import { Block, BlockSerde, SerializedBlock } from './primitives/block'
+import { BAN_SCORE, KnownBlockHashesValue, PeerState } from './network/peers/peer'
+import { Block, SerializedBlock } from './primitives/block'
 import { BlockHeader } from './primitives/blockheader'
+import { Strategy } from './strategy'
 import { Telemetry } from './telemetry'
 import { BenchUtils, ErrorUtils, HashUtils, MathUtils, SetTimeoutToken } from './utils'
 import { ArrayUtils } from './utils/array'
@@ -25,6 +26,7 @@ class AbortSyncingError extends Error {}
 export class Syncer {
   readonly peerNetwork: PeerNetwork
   readonly chain: Blockchain
+  readonly strategy: Strategy
   readonly metrics: MetricsMonitor
   readonly telemetry: Telemetry
   readonly logger: Logger
@@ -41,6 +43,7 @@ export class Syncer {
   constructor(options: {
     peerNetwork: PeerNetwork
     chain: Blockchain
+    strategy: Strategy
     telemetry: Telemetry
     metrics?: MetricsMonitor
     logger?: Logger
@@ -50,6 +53,7 @@ export class Syncer {
 
     this.peerNetwork = options.peerNetwork
     this.chain = options.chain
+    this.strategy = options.strategy
     this.logger = logger.withTag('syncer')
     this.telemetry = options.telemetry
 
@@ -424,7 +428,7 @@ export class Syncer {
   }> {
     Assert.isNotNull(this.chain.head)
 
-    const block = BlockSerde.deserialize(serialized)
+    const block = this.chain.strategy.blockSerde.deserialize(serialized)
     const { isAdded, reason, score } = await this.chain.addBlock(block)
 
     this.speed.add(1)
@@ -479,6 +483,11 @@ export class Syncer {
     const seenAt = new Date()
 
     const { added, block } = await this.addBlock(peer, newBlock)
+
+    peer.knownBlockHashes.set(block.header.hash, KnownBlockHashesValue.Received)
+    for (const knownPeer of peer.knownPeers.values()) {
+      knownPeer.knownBlockHashes.set(block.header.hash, KnownBlockHashesValue.Received)
+    }
 
     if (!peer.sequence || block.header.sequence > peer.sequence) {
       peer.sequence = block.header.sequence

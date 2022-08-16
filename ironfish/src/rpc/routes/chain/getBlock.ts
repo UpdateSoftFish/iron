@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 import * as yup from 'yup'
 import { GENESIS_BLOCK_SEQUENCE } from '../../../consensus'
-import { BlockSerde } from '../../../primitives/block'
 import { BlockHashSerdeInstance } from '../../../serde'
 import { ValidationError } from '../../adapters'
 import { ApiNamespace, router } from '../router'
@@ -169,7 +168,10 @@ router.register<typeof GetBlockRequestSchema, GetBlockResponse>(
         nullifier: BlockHashSerdeInstance.serialize(spend.nullifier),
       }))
 
-      const transactionBuffer = Buffer.from(JSON.stringify(transaction.serialize()))
+      // TODO(IRO-289) We need a better way to either serialize directly to buffer or use CBOR
+      const transactionBuffer = Buffer.from(
+        JSON.stringify(node.strategy.transactionSerde.serialize(transaction)),
+      )
 
       return {
         transaction_identifier: {
@@ -186,7 +188,7 @@ router.register<typeof GetBlockRequestSchema, GetBlockResponse>(
     })
 
     // TODO(IRO-289) We need a better way to either serialize directly to buffer or use CBOR
-    const blockBuffer = Buffer.from(JSON.stringify(BlockSerde.serialize(block)))
+    const blockBuffer = Buffer.from(JSON.stringify(node.strategy.blockSerde.serialize(block)))
 
     request.end({
       blockIdentifier: {

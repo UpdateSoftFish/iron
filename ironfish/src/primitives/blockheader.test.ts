@@ -2,15 +2,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+import { createNodeTest } from '../testUtilities/nodeTest'
 import { GraffitiUtils } from '../utils'
-import { BlockHeader, BlockHeaderSerde, isBlockHeavier, isBlockLater } from './blockheader'
+import { BlockHeader, isBlockHeavier, isBlockLater } from './blockheader'
 import { Target } from './target'
 
 describe('BlockHeaderSerde', () => {
-  const serde = BlockHeaderSerde
+  const nodeTest = createNodeTest()
 
   it('checks equal block headers', () => {
+    const { strategy } = nodeTest
+    const serde = strategy.blockHeaderSerde
+
     const header1 = new BlockHeader(
+      strategy,
       5,
       Buffer.alloc(32),
       { commitment: Buffer.alloc(32, 'header'), size: 8 },
@@ -23,6 +28,7 @@ describe('BlockHeaderSerde', () => {
     )
 
     const header2 = new BlockHeader(
+      strategy,
       5,
       Buffer.alloc(32),
       { commitment: Buffer.alloc(32, 'header'), size: 8 },
@@ -92,7 +98,11 @@ describe('BlockHeaderSerde', () => {
   })
 
   it('serializes and deserializes a block header', () => {
+    const { strategy } = nodeTest
+    const serde = strategy.blockHeaderSerde
+
     const header = new BlockHeader(
+      strategy,
       5,
       Buffer.alloc(32),
       { commitment: Buffer.alloc(32), size: 8 },
@@ -111,6 +121,7 @@ describe('BlockHeaderSerde', () => {
 
   it('checks block is later than', () => {
     const header1 = new BlockHeader(
+      nodeTest.strategy,
       5,
       Buffer.alloc(32),
       { commitment: Buffer.alloc(32), size: 0 },
@@ -122,8 +133,8 @@ describe('BlockHeaderSerde', () => {
       Buffer.alloc(32),
     )
 
-    const serialized = serde.serialize(header1)
-    const header2 = serde.deserialize(serialized)
+    const serialized = nodeTest.strategy.blockHeaderSerde.serialize(header1)
+    const header2 = nodeTest.strategy.blockHeaderSerde.deserialize(serialized)
     expect(isBlockLater(header1, header2)).toBe(false)
 
     header1.sequence = 6
@@ -139,6 +150,7 @@ describe('BlockHeaderSerde', () => {
 
   it('checks block is heavier than', () => {
     const header1 = new BlockHeader(
+      nodeTest.strategy,
       5,
       Buffer.alloc(32),
       { commitment: Buffer.alloc(32), size: 0 },
@@ -150,8 +162,8 @@ describe('BlockHeaderSerde', () => {
       Buffer.alloc(32),
     )
 
-    const serialized = serde.serialize(header1)
-    const header2 = serde.deserialize(serialized)
+    const serialized = nodeTest.strategy.blockHeaderSerde.serialize(header1)
+    const header2 = nodeTest.strategy.blockHeaderSerde.deserialize(serialized)
     expect(isBlockHeavier(header1, header2)).toBe(false)
 
     header1.work = BigInt(1)

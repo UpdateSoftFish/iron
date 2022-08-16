@@ -7,9 +7,10 @@ import { NoteEncryptedHash } from '../primitives/noteEncrypted'
 import { NullifierHash } from '../primitives/nullifier'
 import { Target } from '../primitives/target'
 import { BigIntUtils } from '../utils'
+import { Serde } from './Serde'
 
-export default class PartialBlockHeaderSerde {
-  static serialize(header: PartialBlockHeader): Buffer {
+export default class PartialBlockHeaderSerde implements Serde<PartialBlockHeader, Buffer> {
+  serialize(header: PartialBlockHeader): Buffer {
     const bw = bufio.write(200)
     // TODO: change sequence to u32. expiration_sequence is u32 on transactions, and we're not
     // likely to overflow for a long time.
@@ -32,7 +33,7 @@ export default class PartialBlockHeaderSerde {
     return bw.render()
   }
 
-  static deserialize(data: Buffer): PartialBlockHeader {
+  deserialize(data: Buffer): PartialBlockHeader {
     const br = bufio.read(data)
     const sequence = br.readU64()
     const previousBlockHash = br.readHash()
@@ -63,7 +64,7 @@ export default class PartialBlockHeaderSerde {
     }
   }
 
-  static equals(): boolean {
+  equals(): boolean {
     throw new Error('You should never use this')
   }
 }

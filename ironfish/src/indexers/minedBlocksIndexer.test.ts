@@ -42,9 +42,8 @@ describe('MinedBlockIndexer', () => {
 
   it('should change main block to fork on chain fork', async () => {
     const { node: nodeA, strategy } = await nodeTest.createSetup()
-    const { node: nodeB, strategy: strategyB } = await nodeTest.createSetup()
+    const { node: nodeB } = await nodeTest.createSetup()
     strategy.disableMiningReward()
-    strategyB.disableMiningReward()
 
     const genesis = await nodeA.chain.getBlock(nodeA.chain.genesis)
     Assert.isNotNull(genesis)
@@ -165,9 +164,8 @@ describe('MinedBlockIndexer', () => {
 
     it('returns all mined blocks with scanForks flag included', async () => {
       const { node: nodeA, strategy } = await nodeTest.createSetup()
-      const { node: nodeB, strategy: strategyB } = await nodeTest.createSetup()
+      const { node: nodeB } = await nodeTest.createSetup()
       strategy.disableMiningReward()
-      strategyB.disableMiningReward()
 
       const genesis = await nodeA.chain.getBlock(nodeA.chain.genesis)
       Assert.isNotNull(genesis)

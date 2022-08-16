@@ -53,6 +53,7 @@ async function makeStrategyTree({
 
   if (openDb) {
     await database.open()
+    await tree.upgrade()
   }
 
   return tree

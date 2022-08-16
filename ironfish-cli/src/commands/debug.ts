@@ -1,17 +1,9 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
-import {
-  DatabaseIsLockedError,
-  DatabaseOpenError,
-  ErrorUtils,
-  FileUtils,
-  IronfishNode,
-  IronfishPKG,
-} from '@ironfish/sdk'
+import { DatabaseIsLockedError, FileUtils, IronfishNode, IronfishPKG } from '@ironfish/sdk'
 import { execSync } from 'child_process'
 import os from 'os'
-import { getHeapStatistics } from 'v8'
 import { IronfishCommand } from '../command'
 import { LocalFlags } from '../flags'
 
@@ -30,15 +22,11 @@ export default class Debug extends IronfishCommand {
 
     let dbOpen = true
     try {
-      await node.openDB()
+      await node.openDB({ upgrade: false })
     } catch (err) {
       if (err instanceof DatabaseIsLockedError) {
         this.log('Database in use, skipping output that requires database.')
         this.log('Stop the node and run the debug command again to show full output.\n')
-        dbOpen = false
-      } else if (err instanceof DatabaseOpenError) {
-        this.log('Database cannot be opened, skipping output that requires database.\n')
-        this.log(ErrorUtils.renderError(err, true) + '\n')
         dbOpen = false
       }
     }
@@ -57,12 +45,8 @@ export default class Debug extends IronfishCommand {
     const cpuThreads = cpus.length
 
     const memTotal = FileUtils.formatMemorySize(os.totalmem())
-    const heapTotal = FileUtils.formatMemorySize(getHeapStatistics().total_available_size)
 
     const telemetryEnabled = this.sdk.config.get('enableTelemetry').toString()
-
-    const nodeName = this.sdk.config.get('nodeName').toString()
-    const blockGraffiti = this.sdk.config.get('blockGraffiti').toString()
 
     let cmdInPath: boolean
     try {
@@ -79,13 +63,9 @@ export default class Debug extends IronfishCommand {
       ['CPU model(s)', `${cpuNames.toString()}`],
       ['CPU threads', `${cpuThreads}`],
       ['RAM total', `${memTotal}`],
-      ['Heap total', `${heapTotal}`],
       ['Node version', `${process.version}`],
       ['ironfish in PATH', `${cmdInPath.toString()}`],
-      ['Garbage Collector Exposed', `${String(!!global.gc)}`],
       ['Telemetry enabled', `${telemetryEnabled}`],
-      ['Node name', `${nodeName}`],
-      ['Block graffiti', `${blockGraffiti}`],
     ])
   }
 

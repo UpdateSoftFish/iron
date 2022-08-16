@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import os from 'os'
-import { getHeapStatistics } from 'v8'
 import { createRootLogger, Logger } from '../logger'
 import { Identity } from '../network'
 import { NetworkMessageType } from '../network/types'
@@ -35,9 +34,6 @@ export class MetricsMonitor {
   readonly rss: Gauge
   readonly memFree: Gauge
   readonly memTotal: number
-  readonly heapMax: number
-
-  readonly cpuCores: number
 
   private memoryInterval: SetIntervalToken | null
   private readonly memoryRefreshPeriodMs = 1000
@@ -66,10 +62,6 @@ export class MetricsMonitor {
     this.memTotal = os.totalmem()
     this.memPoolSize = new Gauge()
     this.memoryInterval = null
-
-    this.heapMax = getHeapStatistics().total_available_size
-
-    this.cpuCores = os.cpus().length
   }
 
   get started(): boolean {

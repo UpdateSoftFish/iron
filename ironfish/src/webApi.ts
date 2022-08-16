@@ -5,7 +5,7 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 import { FollowChainStreamResponse } from './rpc/routes/chain/followChain'
 import { Metric } from './telemetry'
-import { HasOwnProperty, UnwrapPromise } from './utils/types'
+import { UnwrapPromise } from './utils/types'
 
 type FaucetTransaction = {
   object: 'faucet_transaction'
@@ -64,14 +64,7 @@ export class WebApi {
   async headDeposits(): Promise<string | null> {
     const response = await axios
       .get<{ block_hash: string }>(`${this.host}/deposits/head`)
-      .catch((e) => {
-        // The API returns 404 for no head
-        if (IsAxiosError(e) && e.response?.status === 404) {
-          return null
-        }
-
-        throw e
-      })
+      .catch(() => null)
 
     return response?.data.block_hash || null
   }
@@ -79,14 +72,7 @@ export class WebApi {
   async headBlocks(): Promise<string | null> {
     const response = await axios
       .get<{ hash: string }>(`${this.host}/blocks/head`)
-      .catch((e) => {
-        // The API returns 404 for no head
-        if (IsAxiosError(e) && e.response?.status === 404) {
-          return null
-        }
-
-        throw e
-      })
+      .catch(() => null)
 
     return response?.data.hash || null
   }
@@ -228,8 +214,4 @@ export class WebApi {
       throw new Error(`Token required for endpoint`)
     }
   }
-}
-
-export function IsAxiosError(e: unknown): e is AxiosError {
-  return typeof e === 'object' && e != null && HasOwnProperty(e, 'isAxiosError')
 }

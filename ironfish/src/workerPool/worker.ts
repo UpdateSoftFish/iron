@@ -9,6 +9,7 @@ import { Assert } from '../assert'
 import { createRootLogger, Logger } from '../logger'
 import { WorkerHeader } from './interfaces/workerHeader'
 import { Job } from './job'
+import { BoxMessageRequest, BoxMessageResponse } from './tasks/boxMessage'
 import { CreateMinersFeeRequest, CreateMinersFeeResponse } from './tasks/createMinersFee'
 import { CreateTransactionRequest, CreateTransactionResponse } from './tasks/createTransaction'
 import { DecryptNotesRequest, DecryptNotesResponse } from './tasks/decryptNotes'
@@ -17,11 +18,8 @@ import { JobAbortedError, JobAbortedMessage } from './tasks/jobAbort'
 import { JobError, JobErrorMessage } from './tasks/jobError'
 import { SleepRequest, SleepResponse } from './tasks/sleep'
 import { SubmitTelemetryRequest, SubmitTelemetryResponse } from './tasks/submitTelemetry'
+import { UnboxMessageRequest, UnboxMessageResponse } from './tasks/unboxMessage'
 import { VerifyTransactionRequest, VerifyTransactionResponse } from './tasks/verifyTransaction'
-import {
-  VerifyTransactionsRequest,
-  VerifyTransactionsResponse,
-} from './tasks/verifyTransactions'
 import { WorkerMessage, WorkerMessageType } from './tasks/workerMessage'
 
 export class Worker {
@@ -234,6 +232,8 @@ export class Worker {
 
   private parseRequest(jobId: number, type: WorkerMessageType, request: Buffer): WorkerMessage {
     switch (type) {
+      case WorkerMessageType.BoxMessage:
+        return BoxMessageRequest.deserialize(jobId, request)
       case WorkerMessageType.CreateMinersFee:
         return CreateMinersFeeRequest.deserialize(jobId, request)
       case WorkerMessageType.CreateTransaction:
@@ -250,10 +250,10 @@ export class Worker {
         return SleepRequest.deserialize(jobId, request)
       case WorkerMessageType.SubmitTelemetry:
         return SubmitTelemetryRequest.deserialize(jobId, request)
+      case WorkerMessageType.UnboxMessage:
+        return UnboxMessageRequest.deserialize(jobId, request)
       case WorkerMessageType.VerifyTransaction:
         return VerifyTransactionRequest.deserialize(jobId, request)
-      case WorkerMessageType.VerifyTransactions:
-        return VerifyTransactionsRequest.deserialize(jobId, request)
     }
   }
 
@@ -263,6 +263,8 @@ export class Worker {
     response: Buffer,
   ): WorkerMessage | JobError | JobAbortedError {
     switch (type) {
+      case WorkerMessageType.BoxMessage:
+        return BoxMessageResponse.deserialize(jobId, response)
       case WorkerMessageType.CreateMinersFee:
         return CreateMinersFeeResponse.deserialize(jobId, response)
       case WorkerMessageType.CreateTransaction:
@@ -279,10 +281,10 @@ export class Worker {
         return SleepResponse.deserialize(jobId, response)
       case WorkerMessageType.SubmitTelemetry:
         return SubmitTelemetryResponse.deserialize(jobId)
+      case WorkerMessageType.UnboxMessage:
+        return UnboxMessageResponse.deserialize(jobId, response)
       case WorkerMessageType.VerifyTransaction:
         return VerifyTransactionResponse.deserialize(jobId, response)
-      case WorkerMessageType.VerifyTransactions:
-        return VerifyTransactionsResponse.deserialize(jobId, response)
     }
   }
 }
